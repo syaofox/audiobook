@@ -24,7 +24,11 @@ def index():
 @app.route('/get_text/<filename>')
 def get_text(filename):
     try:
-        with open(os.path.join(AUDIO_FOLDER, filename), 'r', encoding='utf-8') as f:
+        file_path = os.path.join(AUDIO_FOLDER, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'status': 'error', 'message': '文本文件不存在'})
+            
+        with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         return jsonify({'status': 'success', 'content': content})
     except Exception as e:

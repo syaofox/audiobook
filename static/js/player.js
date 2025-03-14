@@ -26,11 +26,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.status === 'success') {
                 textDisplay.textContent = data.content;
             } else {
-                textDisplay.textContent = '无法加载文本内容';
+                textDisplay.textContent = '暂无文本内容';
             }
         } catch (error) {
             console.error('Error:', error);
-            textDisplay.textContent = '加载文本时出错';
+            textDisplay.textContent = '暂无文本内容';
         }
     }
 
@@ -45,18 +45,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 saveProgress();
             }
             
-            // 更新音频源
+            // 更新音频源并播放（不等待文本加载）
             audioPlayer.src = audioSrc;
             currentAudio = audioSrc;
-            
-            // 加载新的进度
             loadProgress();
-            
-            // 加载对应的文本
-            loadText(textFile);
-            
-            // 开始播放
             audioPlayer.play();
+            
+            // 异步加载文本，不影响音频播放
+            loadText(textFile).catch(() => {
+                textDisplay.textContent = '暂无文本内容';
+            });
         }
     });
 
