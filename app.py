@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.secret_key = 'asdfasfaer32zdfsa'  # 设置session密钥，建议使用随机字符串
 
 # 设置访问密码
-ACCESS_PASSWORD = '0928'  # 设置你的访问密码
+ACCESS_PASSWORD = 'fuck0928'  # 设置你的访问密码
 
 # 音频和文本文件存放路径
 AUDIO_FOLDER = os.path.join('static', 'audio')
@@ -20,6 +20,31 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+def scan_audio_files(directory):
+    """递归扫描目录获取音频文件"""
+    audio_files = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith(('.mp3', '.wav')):
+                # 获取相对于AUDIO_FOLDER的路径
+                rel_path = os.path.relpath(root, AUDIO_FOLDER)
+                if rel_path == '.':
+                    rel_path = ''
+                    
+                name = os.path.splitext(file)[0]
+                file_path = os.path.join(rel_path, file)
+                text_path = os.path.join(rel_path, f'{name}.txt')
+                
+                # 构建显示名称（包含子目录）
+                display_name = os.path.join(rel_path, name) if rel_path else name
+                
+                audio_files.append({
+                    'name': display_name,
+                    'file': file_path,
+                    'text': text_path
+                })
+    return sorted(audio_files, key=lambda x: x['name'])
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -38,19 +63,10 @@ def logout():
 @app.route('/')
 @login_required
 def index():
-    # 获取音频文件列表
-    audio_files = []
-    for file in os.listdir(AUDIO_FOLDER):
-        if file.endswith(('.mp3', '.wav')):
-            name = os.path.splitext(file)[0]
-            audio_files.append({
-                'name': name,
-                'file': file,
-                'text': f'{name}.txt'  # 假设文本文件与音频文件同名，仅扩展名不同
-            })
+    audio_files = scan_audio_files(AUDIO_FOLDER)
     return render_template('index.html', audio_files=audio_files)
 
-@app.route('/get_text/<filename>')
+@app.route('/get_text/<path:filename>')
 @login_required
 def get_text(filename):
     try:
@@ -65,4 +81,4 @@ def get_text(filename):
         return jsonify({'status': 'error', 'message': str(e)})
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(host='0.0.0.0', port=5000, debug=True) 

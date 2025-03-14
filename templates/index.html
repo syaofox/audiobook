@@ -11,15 +11,7 @@
         <div class="header">
             <a href="{{ url_for('logout') }}" class="logout-btn">退出登录</a>
         </div>
-        <div class="player-container">
-            <audio id="audio-player" controls>
-                您的浏览器不支持音频播放器。
-            </audio>
-            
-            <div class="text-content">
-                <div id="text-display"></div>
-            </div>
-
+        <div class="main-content">
             <div class="playlist">
                 <h3>播放列表</h3>
                 <ul id="audio-list">
@@ -30,6 +22,16 @@
                     </li>
                     {% endfor %}
                 </ul>
+            </div>
+            
+            <div class="player-container">
+                <audio id="audio-player" controls>
+                    您的浏览器不支持音频播放器。
+                </audio>
+                
+                <div class="text-content">
+                    <div id="text-display"></div>
+                </div>
             </div>
         </div>
     </div>

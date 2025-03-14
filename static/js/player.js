@@ -34,6 +34,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // 设置激活项
+    function setActiveItem(element) {
+        // 移除所有项的激活状态
+        const items = audioList.getElementsByTagName('li');
+        for (let item of items) {
+            item.classList.remove('active');
+        }
+        // 添加当前项的激活状态
+        element.classList.add('active');
+    }
+
     // 点击播放列表项
     audioList.addEventListener('click', function(e) {
         if (e.target.tagName === 'LI') {
@@ -45,13 +56,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 saveProgress();
             }
             
-            // 更新音频源并播放（不等待文本加载）
+            // 更新音频源并播放
             audioPlayer.src = audioSrc;
             currentAudio = audioSrc;
             loadProgress();
             audioPlayer.play();
             
-            // 异步加载文本，不影响音频播放
+            // 设置激活状态
+            setActiveItem(e.target);
+            
+            // 加载文本
             loadText(textFile).catch(() => {
                 textDisplay.textContent = '暂无文本内容';
             });
