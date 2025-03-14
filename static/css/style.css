@@ -48,4 +48,22 @@
 
 .playlist li:hover {
     background: #eee;
+}
+
+.header {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 20px;
+}
+
+.logout-btn {
+    padding: 8px 16px;
+    background: #dc3545;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.logout-btn:hover {
+    background: #c82333;
 } 

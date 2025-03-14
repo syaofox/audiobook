@@ -8,6 +8,9 @@
 </head>
 <body>
     <div class="container">
+        <div class="header">
+            <a href="{{ url_for('logout') }}" class="logout-btn">退出登录</a>
+        </div>
         <div class="player-container">
             <audio id="audio-player" controls>
                 您的浏览器不支持音频播放器。
