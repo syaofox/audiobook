@@ -27,22 +27,23 @@ def scan_audio_files(directory):
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file.endswith(('.mp3', '.wav')):
-                # 获取相对于AUDIO_FOLDER的路径
-                rel_path = os.path.relpath(root, AUDIO_FOLDER)
+                # 获取相对于AUDIO_FOLDER的路径，并统一使用正斜杠
+                rel_path = os.path.relpath(root, AUDIO_FOLDER).replace('\\', '/')
                 if rel_path == '.':
                     rel_path = ''
                     
                 name = os.path.splitext(file)[0]
-                file_path = os.path.join(rel_path, file)
-                text_path = os.path.join(rel_path, f'{name}.txt')
+                # 确保文件路径使用正斜杠
+                file_path = f"{rel_path}/{file}" if rel_path else file
+                text_path = f"{rel_path}/{name}.txt" if rel_path else f"{name}.txt"
                 
                 # 构建显示名称（包含子目录）
-                display_name = os.path.join(rel_path, name) if rel_path else name
+                display_name = f"{rel_path}/{name}" if rel_path else name
                 
                 audio_files.append({
-                    'name': display_name,
-                    'file': file_path,
-                    'text': text_path
+                    'name': display_name.replace('\\', '/'),
+                    'file': file_path.replace('\\', '/'),
+                    'text': text_path.replace('\\', '/')
                 })
     return sorted(audio_files, key=lambda x: x['name'])
 
@@ -70,7 +71,15 @@ def index():
 @login_required
 def get_text(filename):
     try:
-        file_path = os.path.join(AUDIO_FOLDER, filename)
+        # 规范化文件路径，移除任何多余的斜杠
+        safe_filename = os.path.normpath(filename).replace('\\', '/')
+        file_path = os.path.join(AUDIO_FOLDER, safe_filename)
+        
+        # 验证文件路径是否在允许的目录内
+        real_path = os.path.realpath(file_path)
+        if not real_path.startswith(os.path.realpath(AUDIO_FOLDER)):
+            return jsonify({'status': 'error', 'message': '无效的文件路径'})
+            
         if not os.path.exists(file_path):
             return jsonify({'status': 'error', 'message': '文本文件不存在'})
             
