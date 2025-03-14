@@ -67,6 +67,31 @@ def index():
     audio_files = scan_audio_files(AUDIO_FOLDER)
     return render_template('index.html', audio_files=audio_files)
 
+@app.route('/play/<path:filename>')
+@login_required
+def play_audio(filename):
+    try:
+        safe_filename = os.path.normpath(filename).replace('\\', '/')
+        # 获取音频文件信息
+        audio_path = os.path.join(AUDIO_FOLDER, safe_filename)
+        text_path = os.path.splitext(audio_path)[0] + '.txt'
+        
+        if not os.path.exists(audio_path):
+            return '音频文件不存在', 404
+            
+        # 读取文本内容
+        text_content = ''
+        if os.path.exists(text_path):
+            with open(text_path, 'r', encoding='utf-8') as f:
+                text_content = f.read()
+                
+        return render_template('player.html', 
+                             audio_file=safe_filename,
+                             text_content=text_content,
+                             filename=os.path.basename(safe_filename))
+    except Exception as e:
+        return str(e), 500
+
 @app.route('/get_text/<path:filename>')
 @login_required
 def get_text(filename):
@@ -88,6 +113,26 @@ def get_text(filename):
         return jsonify({'status': 'success', 'content': content})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)})
+
+@app.route('/view_text/<path:filename>')
+@login_required
+def view_text(filename):
+    try:
+        safe_filename = os.path.normpath(filename).replace('\\', '/')
+        file_path = os.path.join(AUDIO_FOLDER, safe_filename)
+        
+        real_path = os.path.realpath(file_path)
+        if not real_path.startswith(os.path.realpath(AUDIO_FOLDER)):
+            return '无效的文件路径', 400
+            
+        if not os.path.exists(file_path):
+            return '文本文件不存在', 404
+            
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return render_template('text_view.html', content=content, filename=filename)
+    except Exception as e:
+        return str(e), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
