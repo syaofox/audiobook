@@ -1,0 +1,6 @@
+# python
+__pycache__
+*.pyc
+
+# 音频文件
+static/audio/*

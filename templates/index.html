@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>有声读物播放器</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="player-container">
+            <audio id="audio-player" controls>
+                您的浏览器不支持音频播放器。
+            </audio>
+            
+            <div class="text-content">
+                <div id="text-display"></div>
+            </div>
+
+            <div class="playlist">
+                <h3>播放列表</h3>
+                <ul id="audio-list">
+                    {% for audio in audio_files %}
+                    <li data-audio="{{ url_for('static', filename='audio/' + audio.file) }}"
+                        data-text="{{ audio.text }}">
+                        {{ audio.name }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/player.js') }}"></script>
+</body>
+</html> 
