@@ -32,7 +32,7 @@
         </div>
 
         <div class="audio-container">
-            <audio controls style="width: 100%">
+            <audio controls style="width: 100%" id="audioPlayer">
                 <source src="{{ url_for('static', filename='audio/' + audio_file) }}" type="audio/mpeg">
                 您的浏览器不支持音频播放。
             </audio>
@@ -48,31 +48,65 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const textContent = document.getElementById('textContent');
-            if (!textContent) return;
-
-            // 生成唯一的存储键
-            const scrollKey = 'scroll_position_{{ audio_file }}';
+            const audioPlayer = document.getElementById('audioPlayer');
             
-            // 恢复滚动位置
-            const savedPosition = localStorage.getItem(scrollKey);
-            if (savedPosition) {
-                textContent.scrollTop = parseInt(savedPosition);
+            // 文本滚动位置的键
+            const scrollKey = 'scroll_position_{{ audio_file }}';
+            // 音频播放进度的键
+            const audioKey = 'audio_position_{{ audio_file }}';
+            
+            // 恢复文本滚动位置
+            if (textContent) {
+                const savedPosition = localStorage.getItem(scrollKey);
+                if (savedPosition) {
+                    textContent.scrollTop = parseInt(savedPosition);
+                }
+
+                // 保存文本滚动位置（使用节流）
+                let scrollTimeout;
+                textContent.addEventListener('scroll', function() {
+                    if (scrollTimeout) {
+                        clearTimeout(scrollTimeout);
+                    }
+                    scrollTimeout = setTimeout(() => {
+                        localStorage.setItem(scrollKey, textContent.scrollTop.toString());
+                    }, 100);
+                });
             }
 
-            // 保存滚动位置（使用节流以减少存储频率）
-            let timeout;
-            textContent.addEventListener('scroll', function() {
-                if (timeout) {
-                    clearTimeout(timeout);
+            // 音频播放进度相关功能
+            if (audioPlayer) {
+                // 恢复音频播放进度
+                const savedTime = localStorage.getItem(audioKey);
+                if (savedTime) {
+                    audioPlayer.currentTime = parseFloat(savedTime);
                 }
-                timeout = setTimeout(() => {
-                    localStorage.setItem(scrollKey, textContent.scrollTop.toString());
-                }, 100);
-            });
 
-            // 在页面关闭或切换时保存位置
+                // 定期保存播放进度（每秒）
+                let audioTimeout;
+                audioPlayer.addEventListener('timeupdate', function() {
+                    if (audioTimeout) {
+                        clearTimeout(audioTimeout);
+                    }
+                    audioTimeout = setTimeout(() => {
+                        localStorage.setItem(audioKey, audioPlayer.currentTime.toString());
+                    }, 1000);
+                });
+
+                // 播放结束时清除保存的进度
+                audioPlayer.addEventListener('ended', function() {
+                    localStorage.removeItem(audioKey);
+                });
+            }
+
+            // 页面关闭或切换时保存所有进度
             window.addEventListener('beforeunload', function() {
-                localStorage.setItem(scrollKey, textContent.scrollTop.toString());
+                if (textContent) {
+                    localStorage.setItem(scrollKey, textContent.scrollTop.toString());
+                }
+                if (audioPlayer) {
+                    localStorage.setItem(audioKey, audioPlayer.currentTime.toString());
+                }
             });
         });
     </script>
