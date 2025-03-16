@@ -9,12 +9,35 @@
         .audio-list {
             margin: 20px;
         }
-        .audio-item {
+        .folder-item, .audio-item {
             padding: 10px;
             border-bottom: 1px solid #eee;
         }
-        .audio-item:hover {
+        .folder-item:hover, .audio-item:hover {
             background-color: #f8f9fa;
+        }
+        .folder-content {
+            margin-left: 20px;
+            display: none;
+        }
+        .folder-content.show {
+            display: block;
+        }
+        .folder-toggle {
+            cursor: pointer;
+            user-select: none;
+        }
+        .folder-toggle::before {
+            content: '▶';
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.2s;
+        }
+        .folder-toggle.open::before {
+            transform: rotate(90deg);
+        }
+        .audio-item {
+            margin-left: 20px;
         }
     </style>
 </head>
@@ -26,14 +49,41 @@
         </div>
         
         <div class="audio-list">
-            {% for audio in audio_files %}
-            <div class="audio-item">
-                <a href="{{ url_for('play_audio', filename=audio.file) }}" class="text-decoration-none">
-                    {{ audio.name }}
-                </a>
-            </div>
-            {% endfor %}
+            {% macro render_folder(folder, path='') %}
+                {# 先渲染当前层级的文件 #}
+                {% for file in folder['files']|sort(attribute='name') %}
+                    <div class="audio-item">
+                        <a href="{{ url_for('play_audio', filename=file.full_path) }}" class="text-decoration-none">
+                            {{ file.name }}
+                        </a>
+                    </div>
+                {% endfor %}
+                
+                {# 然后渲染子目录 #}
+                {% for name, content in folder['dirs'].items() %}
+                    <div class="folder-item">
+                        <div class="folder-toggle">{{ name }}</div>
+                        <div class="folder-content">
+                            {{ render_folder(content, path + name + '/') }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endmacro %}
+            
+            {{ render_folder(audio_files) }}
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.folder-toggle').forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    this.classList.toggle('open');
+                    const content = this.nextElementSibling;
+                    content.classList.toggle('show');
+                });
+            });
+        });
+    </script>
 </body>
 </html> 

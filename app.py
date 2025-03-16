@@ -22,30 +22,68 @@ def login_required(f):
     return decorated_function
 
 def scan_audio_files(directory):
-    """递归扫描目录获取音频文件"""
+    """递归扫描目录获取音频文件,返回树形结构"""
+    def build_tree(files):
+        # 初始化根节点
+        tree = {'files': [], 'dirs': {}}
+        # 使用集合来跟踪已添加的文件，避免重复
+        added_files = set()
+        
+        for file_info in files:
+            path_parts = [p for p in file_info['name'].split('/') if p]
+            current = tree
+            
+            # 生成用于检查重复的唯一标识符
+            file_id = '/'.join(path_parts)
+            if file_id in added_files:
+                continue
+                
+            added_files.add(file_id)
+            
+            # 如果有目录部分
+            if len(path_parts) > 1:
+                # 处理除最后一个部分（文件名）外的所有部分
+                for part in path_parts[:-1]:
+                    if part not in current['dirs']:
+                        current['dirs'][part] = {'files': [], 'dirs': {}}
+                    current = current['dirs'][part]
+            
+            # 添加文件
+            current['files'].append({
+                'name': path_parts[-1],
+                'full_path': file_info['file']
+            })
+        return tree
+
+    # 先获取所有文件
     audio_files = []
+    seen_files = set()  # 用于跟踪已处理的文件
+    
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file.endswith(('.mp3', '.wav')):
-                # 获取相对于AUDIO_FOLDER的路径，并统一使用正斜杠
+                # 获取相对路径
                 rel_path = os.path.relpath(root, AUDIO_FOLDER).replace('\\', '/')
-                if rel_path == '.':
-                    rel_path = ''
-                    
                 name = os.path.splitext(file)[0]
-                # 确保文件路径使用正斜杠
-                file_path = f"{rel_path}/{file}" if rel_path else file
-                text_path = f"{rel_path}/{name}.txt" if rel_path else f"{name}.txt"
                 
-                # 构建显示名称（包含子目录）
-                display_name = f"{rel_path}/{name}" if rel_path else name
+                # 构建文件路径
+                if rel_path == '.':
+                    display_name = name
+                    file_path = file
+                else:
+                    display_name = f"{rel_path}/{name}"
+                    file_path = f"{rel_path}/{file}"
                 
-                audio_files.append({
-                    'name': display_name.replace('\\', '/'),
-                    'file': file_path.replace('\\', '/'),
-                    'text': text_path.replace('\\', '/')
-                })
-    return sorted(audio_files, key=lambda x: x['name'])
+                # 检查是否已经处理过这个文件
+                if file_path not in seen_files:
+                    seen_files.add(file_path)
+                    audio_files.append({
+                        'name': display_name,
+                        'file': file_path
+                    })
+    
+    # 构建树形结构
+    return build_tree(sorted(audio_files, key=lambda x: x['name']))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
