@@ -1,6 +1,7 @@
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 import os
 from functools import wraps
+import markdown  # 添加这一行导入markdown库
 
 app = Flask(__name__)
 app.secret_key = 'asdfasfaer32zdfsa'  # 设置session密钥，建议使用随机字符串
@@ -113,19 +114,33 @@ def play_audio(filename):
         # 获取音频文件信息
         audio_path = os.path.join(AUDIO_FOLDER, safe_filename)
         text_path = os.path.splitext(audio_path)[0] + '.txt'
+        md_path = os.path.splitext(audio_path)[0] + '.md'  # 添加对md文件的支持
         
         if not os.path.exists(audio_path):
             return '音频文件不存在', 404
             
         # 读取文本内容
         text_content = ''
-        if os.path.exists(text_path):
+        is_markdown = False
+        
+        # 优先检查md文件，如果存在则读取
+        if os.path.exists(md_path):
+            with open(md_path, 'r', encoding='utf-8') as f:
+                text_content = f.read()
+                is_markdown = True
+        # 如果md文件不存在，则尝试读取txt文件
+        elif os.path.exists(text_path):
             with open(text_path, 'r', encoding='utf-8') as f:
                 text_content = f.read()
+        
+        # 如果是Markdown格式，转换为HTML
+        if is_markdown:
+            text_content = markdown.markdown(text_content, extensions=['extra'])
                 
         return render_template('player.html', 
                              audio_file=safe_filename,
                              text_content=text_content,
+                             is_markdown=is_markdown,
                              filename=os.path.basename(safe_filename))
     except Exception as e:
         return str(e), 500
@@ -210,4 +225,4 @@ def get_adjacent_files(filename):
         return jsonify({'status': 'error', 'message': str(e)})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True) 
+    app.run(host='0.0.0.0', port=5000, debug=True)
