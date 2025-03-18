@@ -5,6 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
         .text-content {
             margin-top: 20px;
@@ -36,6 +37,15 @@
                 <source src="{{ url_for('static', filename='audio/' + audio_file) }}" type="audio/mpeg">
                 您的浏览器不支持音频播放。
             </audio>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-2 mb-3">
+            <button id="prevChapter" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> 上一章
+            </button>
+            <button id="nextChapter" class="btn btn-outline-secondary">
+                下一章 <i class="bi bi-arrow-right"></i>
+            </button>
         </div>
 
         {% if text_content %}
@@ -109,6 +119,67 @@
                 }
             });
         });
+
+        // 获取相邻文件并设置导航按钮
+        const currentAudioFile = '{{ audio_file }}';
+        const prevButton = document.getElementById('prevChapter');
+        const nextButton = document.getElementById('nextChapter');
+        
+        // 初始化导航按钮
+        initNavigationButtons();
+        
+        function initNavigationButtons() {
+            // 禁用按钮直到数据加载完成
+            prevButton.disabled = true;
+            nextButton.disabled = true;
+            
+            // 获取相邻文件信息
+            fetch(`/get_adjacent_files/${currentAudioFile}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // 设置上一章按钮
+                        if (data.prev_file) {
+                            prevButton.disabled = false;
+                            prevButton.onclick = function() {
+                                // 保存当前播放和阅读进度
+                                saveCurrentProgress();
+                                // 跳转到上一章
+                                window.location.href = `/play/${data.prev_file}`;
+                            };
+                        }
+                        
+                        // 设置下一章按钮
+                        if (data.next_file) {
+                            nextButton.disabled = false;
+                            nextButton.onclick = function() {
+                                // 保存当前播放和阅读进度
+                                saveCurrentProgress();
+                                // 跳转到下一章
+                                window.location.href = `/play/${data.next_file}`;
+                            };
+                        }
+                    } else {
+                        console.error('获取相邻文件失败:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('请求出错:', error);
+                });
+        }
+        
+        // 保存当前进度的辅助函数
+        function saveCurrentProgress() {
+            // 保存当前音频进度
+            const audioPlayer = document.getElementById('audioPlayer');
+            localStorage.setItem(`audio_position_${currentAudioFile}`, audioPlayer.currentTime.toString());
+            
+            // 保存当前阅读进度（如果有文本内容）
+            const textContent = document.getElementById('textContent');
+            if (textContent) {
+                localStorage.setItem(`scroll_position_${currentAudioFile}`, textContent.scrollTop.toString());
+            }
+        }
     </script>
 </body>
 </html> 

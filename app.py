@@ -172,5 +172,42 @@ def view_text(filename):
     except Exception as e:
         return str(e), 500
 
+@app.route('/get_adjacent_files/<path:filename>')
+@login_required
+def get_adjacent_files(filename):
+    try:
+        # 规范化文件路径
+        safe_filename = os.path.normpath(filename).replace('\\', '/')
+        
+        # 获取所有音频文件的扁平列表
+        flat_files = []
+        for root, dirs, files in os.walk(AUDIO_FOLDER):
+            for file in sorted(files):
+                if file.endswith(('.mp3', '.wav')):
+                    rel_path = os.path.relpath(root, AUDIO_FOLDER).replace('\\', '/')
+                    if rel_path == '.':
+                        file_path = file
+                    else:
+                        file_path = f"{rel_path}/{file}"
+                    flat_files.append(file_path)
+        
+        # 查找当前文件在列表中的位置
+        try:
+            current_index = flat_files.index(safe_filename)
+        except ValueError:
+            return jsonify({'status': 'error', 'message': '文件不在列表中'})
+        
+        # 确定前一个和后一个文件
+        prev_file = flat_files[current_index - 1] if current_index > 0 else None
+        next_file = flat_files[current_index + 1] if current_index < len(flat_files) - 1 else None
+        
+        return jsonify({
+            'status': 'success',
+            'prev_file': prev_file,
+            'next_file': next_file
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)})
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True) 
