@@ -6,7 +6,7 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or secrets.token_hex(16)
     
     # 音频文件夹配置
-    AUDIO_FOLDER = os.path.join('static', 'audio')
+    AUDIO_FOLDER = os.environ.get('AUDIO_FOLDER') or os.path.join('static', 'audio')
     
     # 访问密码
     ACCESS_PASSWORD = os.environ.get('ACCESS_PASSWORD') or 'fuck0928'  # 建议通过环境变量设置

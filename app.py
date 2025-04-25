@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, session, redirect, url_for
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for, send_from_directory
 import os
 from functools import wraps
 import markdown  # 添加这一行导入markdown库
@@ -10,7 +10,9 @@ def create_app(config_name='production'):
     app.config.from_object(config[config_name])
 
     # 音频和文本文件存放路径
-    if not app.config.get('AUDIO_FOLDER'):
+    # 确保使用配置中指定的音频目录
+    audio_folder = app.config.get('AUDIO_FOLDER')
+    if not audio_folder:
         app.config['AUDIO_FOLDER'] = os.path.join('static', 'audio')
     
     # 设置访问密码变量
@@ -63,6 +65,11 @@ def create_app(config_name='production'):
         audio_files = []
         seen_files = set()  # 用于跟踪已处理的文件
         audio_folder = app.config['AUDIO_FOLDER']
+        
+        # 确保目录存在
+        if not os.path.exists(directory):
+            app.logger.warning(f"音频目录不存在: {directory}")
+            return {'files': [], 'dirs': {}}
         
         for root, dirs, files in os.walk(directory):
             for file in files:
@@ -141,9 +148,18 @@ def create_app(config_name='production'):
             # 如果是Markdown格式，转换为HTML
             if is_markdown:
                 text_content = markdown.markdown(text_content, extensions=['extra'])
+            
+            # 确定音频文件的URL路径
+            # 如果是默认音频目录（static/audio内），使用静态URL
+            if audio_folder == os.path.join('static', 'audio'):
+                audio_url = url_for('static', filename='audio/' + safe_filename)
+            else:
+                # 如果是自定义目录，使用protected_static路由
+                audio_url = url_for('protected_static', filename='audio/' + safe_filename)
                     
             return render_template('player.html', 
                                  audio_file=safe_filename,
+                                 audio_url=audio_url,  # 添加音频URL
                                  text_content=text_content,
                                  is_markdown=is_markdown,
                                  filename=os.path.basename(safe_filename))
@@ -202,11 +218,19 @@ def create_app(config_name='production'):
             safe_filename = os.path.normpath(filename).replace('\\', '/')
             audio_folder = app.config['AUDIO_FOLDER']
             
+            # 验证目录是否存在
+            if not os.path.exists(audio_folder):
+                return jsonify({
+                    'status': 'error', 
+                    'message': f'音频目录不存在: {audio_folder}'
+                })
+                
             # 获取所有音频文件的扁平列表
             flat_files = []
             for root, dirs, files in os.walk(audio_folder):
                 for file in sorted(files):
                     if file.endswith(('.mp3', '.wav')):
+                        # 获取相对路径
                         rel_path = os.path.relpath(root, audio_folder).replace('\\', '/')
                         if rel_path == '.':
                             file_path = file
@@ -235,10 +259,25 @@ def create_app(config_name='production'):
     @app.route('/protected_static/<path:filename>')
     @login_required
     def protected_static(filename):
-        # 这个路由用于保护static/audio目录中的文件
+        # 这个路由用于保护static/audio目录中的文件或自定义音频目录中的文件
         # 只允许已登录用户访问
+        audio_folder = app.config['AUDIO_FOLDER']
+        
         if filename.startswith('audio/'):
-            return app.send_static_file(filename)
+            # 从URL中提取实际的音频文件路径
+            actual_path = filename[6:]  # 去掉"audio/"前缀
+            
+            # 如果使用的是默认音频目录（static/audio），直接使用静态文件路由
+            if audio_folder == os.path.join('static', 'audio'):
+                return app.send_static_file(filename)
+            else:
+                # 如果使用的是自定义目录，发送该目录中的文件
+                file_path = os.path.join(audio_folder, actual_path)
+                if os.path.exists(file_path) and os.path.isfile(file_path):
+                    return send_from_directory(os.path.dirname(file_path), 
+                                              os.path.basename(file_path))
+                return f'文件不存在: {actual_path}', 404
+                
         return '未授权访问', 403
 
     # 重写默认的静态文件处理，防止直接访问静态目录下的音频文件

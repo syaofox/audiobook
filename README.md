@@ -50,6 +50,17 @@ audio-reader/
 4. 配置文件：
    - 复制 `config.example.py` 为 `config.py`
    - 修改访问密码和其他配置项
+   - 可以通过环境变量 `AUDIO_FOLDER` 自定义音频文件目录，例如：
+     ```bash
+     # Linux/Mac
+     export AUDIO_FOLDER="/path/to/your/audio/files"
+     
+     # Windows (CMD)
+     set AUDIO_FOLDER=D:\your\audio\files
+     
+     # Windows (PowerShell)
+     $env:AUDIO_FOLDER="D:\your\audio\files"
+     ```
 
 5. 运行服务：
 
