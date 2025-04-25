@@ -232,6 +232,22 @@ def create_app(config_name='production'):
         except Exception as e:
             return jsonify({'status': 'error', 'message': str(e)})
 
+    @app.route('/protected_static/<path:filename>')
+    @login_required
+    def protected_static(filename):
+        # 这个路由用于保护static/audio目录中的文件
+        # 只允许已登录用户访问
+        if filename.startswith('audio/'):
+            return app.send_static_file(filename)
+        return '未授权访问', 403
+
+    # 重写默认的静态文件处理，防止直接访问静态目录下的音频文件
+    @app.before_request
+    def check_static_audio():
+        # 检查是否是对静态audio文件夹的直接访问
+        if request.path.startswith('/static/audio/') and 'logged_in' not in session:
+            return redirect(url_for('login'))
+            
     return app
 
 # 应用实例

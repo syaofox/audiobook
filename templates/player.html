@@ -93,7 +93,7 @@
 
         <div class="audio-container">
             <audio controls style="width: 100%" id="audioPlayer">
-                <source src="{{ url_for('static', filename='audio/' + audio_file) }}" type="audio/mpeg">
+                <source src="{{ url_for('protected_static', filename='audio/' + audio_file) }}" type="audio/mpeg">
                 您的浏览器不支持音频播放。
             </audio>
         </div>
